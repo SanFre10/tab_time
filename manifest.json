@@ -1,0 +1,20 @@
+{
+    "manifest_version": 2,
+    "name": "Tab Focus Timer",
+    "author": "Santiago Frega",
+    "version": "1.0",
+    "description": "Tracks how long the active tab is focused.",
+    "permissions": [
+        "tabs",
+        "storage",
+        "activeTab"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "browser_action": {
+        "default_popup": "popup.html"
+    }
+}
