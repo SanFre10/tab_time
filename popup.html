@@ -17,6 +17,7 @@
 				margin-top: 0;
 				font-size: 16px;
 				color: #ffffff;
+				text-align: center;
 			}
 
 			ul {
@@ -33,6 +34,11 @@
 				padding: 6px 10px;
 				margin-bottom: 6px;
 				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+			}
+
+			.active {
+				background-color: #2a2a2a;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 			}
 
 			.icon-wrapper {
@@ -67,10 +73,14 @@
 				text-overflow: ellipsis;
 				max-width: 180px;
 			}
+
+			.visited {
+				color: #aaa;
+			}
 		</style>
 	</head>
 	<body>
-		<h3>Focused Time</h3>
+		<h3 id="total"></h3>
 		<ul id="timer-list"></ul>
 	</body>
 </html>
