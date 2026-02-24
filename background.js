@@ -1,6 +1,23 @@
 let activeTab = null;
 let startTime = null;
-let timeSpent = {};
+
+let dailyStats = {};
+
+browser.storage.local.get("dailyStats").then(res => {
+    if (res.dailyStats) {
+        dailyStats = res.dailyStats;
+    }
+});
+
+function persistStats() {
+    browser.storage.local.set({ dailyStats });
+}
+
+const getCurrentDate = () => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
 
 const timeSpentKey = (tab) => new URL(tab.url).hostname || tab.url;
 
@@ -12,33 +29,42 @@ function startTimer(tab) {
 function saveTime() {
     if (activeTab && startTime) {
         const elapsed = Date.now() - startTime;
+        const currentHost = timeSpentKey(activeTab);
+        const date = getCurrentDate();
 
-        const currentHost = timeSpentKey(activeTab)
-        const current = timeSpent[currentHost]?.time || 0;
+        if (!dailyStats[date]) dailyStats[date] = {};
 
-        timeSpent[currentHost] = {
-            ...(timeSpent[currentHost] || { visited: 0 }),
+        const current = dailyStats[date][currentHost]?.time || 0;
+
+        dailyStats[date][currentHost] = {
+            ...(dailyStats[date][currentHost] || { visited: 0 }),
             url: activeTab.url,
             hostname: currentHost,
             time: current + elapsed,
         };
-        if (activeTab.favIconUrl) timeSpent[currentHost].icon = activeTab.favIconUrl;
+        if (activeTab.favIconUrl) dailyStats[date][currentHost].icon = activeTab.favIconUrl;
 
         startTime = null;
+        persistStats();
     }
 }
 
 function incrementVisit(tab) {
-    const currentHost = timeSpentKey(tab)
-    const currentVisited = timeSpent[currentHost]?.visited || 0;
+    const currentHost = timeSpentKey(tab);
+    const date = getCurrentDate();
 
-    timeSpent[currentHost] = {
-        ...(timeSpent[currentHost] || { time: 0 }),
+    if (!dailyStats[date]) dailyStats[date] = {};
+
+    const currentVisited = dailyStats[date][currentHost]?.visited || 0;
+
+    dailyStats[date][currentHost] = {
+        ...(dailyStats[date][currentHost] || { time: 0 }),
         url: tab.url,
         hostname: currentHost,
         visited: currentVisited + 1,
     };
-    if (tab.favIconUrl) timeSpent[currentHost].icon = tab.favIconUrl;
+    if (tab.favIconUrl) dailyStats[date][currentHost].icon = tab.favIconUrl;
+    persistStats();
 }
 
 async function changeTab(tabId) {
@@ -46,16 +72,22 @@ async function changeTab(tabId) {
     if (tab?.active) {
         saveTime();
         incrementVisit(tab);
-        setActive(tab)
+        setActive(tab);
         startTimer(tab);
     }
 }
 
 function setActive(tab) {
-    Object.keys(timeSpent).forEach(key => {
-        timeSpent[key].active = false;
+    const date = getCurrentDate();
+    if (!dailyStats[date]) return;
+
+    Object.keys(dailyStats[date]).forEach(key => {
+        dailyStats[date][key].active = false;
     });
-    timeSpent[timeSpentKey(tab)].active = true;
+
+    if (dailyStats[date][timeSpentKey(tab)]) {
+        dailyStats[date][timeSpentKey(tab)].active = true;
+    }
 }
 
 browser.tabs.onActivated.addListener(({ tabId }) => changeTab(tabId));
@@ -81,7 +113,10 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.command === "getTime") {
         saveTime(); // Only update time, not visits
-        sendResponse({ timeSpent: Object.values(timeSpent) });
+        const date = getCurrentDate();
+        const todayStats = dailyStats[date] ? Object.values(dailyStats[date]) : [];
+        sendResponse({ timeSpent: todayStats });
         startTimer(activeTab); // Resume timing
+        return true;
     }
 });
