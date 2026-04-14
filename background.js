@@ -5,12 +5,12 @@ let dailyStats = {};
 
 browser.storage.local.get("dailyStats").then(res => {
     if (res.dailyStats) {
-        dailyStats = res.dailyStats;
+        dailyStats = JSON.parse(res.dailyStats);
     }
 });
 
 function persistStats() {
-    browser.storage.local.set({ dailyStats });
+    browser.storage.local.set({ dailyStats: JSON.stringify(dailyStats) });
 }
 
 const getCurrentDate = () => {
@@ -113,7 +113,7 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.command === "getTime") {
         saveTime(); // Only update time, not visits
-        const date = getCurrentDate();
+        const date = message.date || getCurrentDate();
         const todayStats = dailyStats[date] ? Object.values(dailyStats[date]) : [];
         sendResponse({ timeSpent: todayStats });
         startTimer(activeTab); // Resume timing

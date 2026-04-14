@@ -77,9 +77,47 @@
 			.visited {
 				color: #aaa;
 			}
+
+			.date-selector {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 10px;
+			}
+
+			.date-selector button {
+				background: #333;
+				border: none;
+				color: #fff;
+				cursor: pointer;
+				padding: 5px 10px;
+				border-radius: 4px;
+				font-size: 14px;
+			}
+
+			.date-selector button:hover {
+				background: #444;
+			}
+
+			.date-selector button:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+
+			#current-date {
+				font-size: 14px;
+				font-weight: 500;
+				min-width: 80px;
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body>
+		<div class="date-selector">
+			<button id="prev-date">&lt;</button>
+			<span id="current-date"></span>
+			<button id="next-date">&gt;</button>
+		</div>
 		<h3 id="total"></h3>
 		<ul id="timer-list"></ul>
 	</body>

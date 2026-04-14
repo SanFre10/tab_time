@@ -8,8 +8,33 @@ function formatTime(ms) {
             ${seconds.toString().padStart(2, "0")}`;
 }
 
+const today = () => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
+let selectedDate = today()
+
+function updateDateDisplay() {
+    document.getElementById('current-date').textContent = selectedDate
+    const nextBtn = document.getElementById('next-date');
+    nextBtn.disabled = selectedDate >= today();
+}
+
+function changeDate(days) {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + days);
+    selectedDate = date.toISOString().split('T')[0];
+    updateDateDisplay();
+    updateTimer();
+}
+
+document.getElementById('prev-date').addEventListener('click', () => changeDate(-1));
+document.getElementById('next-date').addEventListener('click', () => changeDate(1));
+
 function updateTimer() {
-    browser.runtime.sendMessage({ command: "getTime" }).then(response => {
+    browser.runtime.sendMessage({ command: "getTime", date: selectedDate }).then(response => {
         const list = document.getElementById("timer-list");
         list.innerHTML = "";
 
@@ -63,6 +88,9 @@ function updateTimer() {
     });
 }
 
-// Update every second
-setInterval(updateTimer, 1000);
+// Update every second (only if viewing today)
+setInterval(() => {
+    if (selectedDate === today()) updateTimer();
+}, 1000);
+updateDateDisplay();
 updateTimer();
