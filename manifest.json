@@ -1,9 +1,13 @@
 {
     "manifest_version": 2,
     "name": "Tab Focus Timer",
+    "short_name": "Tab Timer",
     "author": "Santiago Frega",
-    "version": "1.3",
-    "description": "Tracks how long the active tab is focused.",
+    "version": "1.3.2",
+    "description": "Track how long you spend on each website with daily browsing statistics.",
+    "icons": {
+        "48": "icon.png"
+    },
     "permissions": [
         "tabs",
         "webNavigation",
