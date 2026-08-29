@@ -69,7 +69,7 @@ function updateTimer() {
             const url = document.createElement("div");
             url.className = "url";
             url.textContent = item.hostname || "";
-            url.title = item.url || "";
+            url.title = item.hostname || "";
 
             content.appendChild(time);
             content.appendChild(url);

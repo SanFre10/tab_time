@@ -2,15 +2,23 @@ let activeTab = null;
 let startTime = null;
 
 let dailyStats = {};
+let siteSettings = {};
 
-browser.storage.local.get("dailyStats").then(res => {
+browser.storage.local.get(["dailyStats", "siteSettings"]).then(res => {
     if (res.dailyStats) {
         dailyStats = JSON.parse(res.dailyStats);
+    }
+    if (res.siteSettings) {
+        siteSettings = JSON.parse(res.siteSettings);
     }
 });
 
 function persistStats() {
     browser.storage.local.set({ dailyStats: JSON.stringify(dailyStats) });
+}
+
+function persistSiteSettings() {
+    browser.storage.local.set({ siteSettings: JSON.stringify(siteSettings) });
 }
 
 const getCurrentDate = () => {
@@ -38,11 +46,15 @@ function saveTime() {
 
         dailyStats[date][currentHost] = {
             ...(dailyStats[date][currentHost] || { visited: 0 }),
-            url: activeTab.url,
-            hostname: currentHost,
             time: current + elapsed,
         };
-        if (activeTab.favIconUrl) dailyStats[date][currentHost].icon = activeTab.favIconUrl;
+        if (activeTab.favIconUrl) {
+            siteSettings[currentHost] = {
+                ...siteSettings[currentHost] || {},
+                icon: activeTab.favIconUrl,
+            };
+            persistSiteSettings();
+        }
 
         startTime = null;
         persistStats();
@@ -59,11 +71,15 @@ function incrementVisit(tab) {
 
     dailyStats[date][currentHost] = {
         ...(dailyStats[date][currentHost] || { time: 0 }),
-        url: tab.url,
-        hostname: currentHost,
         visited: currentVisited + 1,
     };
-    if (tab.favIconUrl) dailyStats[date][currentHost].icon = tab.favIconUrl;
+    if (tab.favIconUrl) {
+        siteSettings[currentHost] = {
+            ...siteSettings[currentHost] || {},
+            icon: tab.favIconUrl,
+        };
+        persistSiteSettings();
+    }
     persistStats();
 }
 
@@ -112,11 +128,16 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.command === "getTime") {
-        saveTime(); // Only update time, not visits
+        saveTime();
         const date = message.date || getCurrentDate();
-        const todayStats = dailyStats[date] ? Object.values(dailyStats[date]) : [];
-        sendResponse({ timeSpent: todayStats });
-        startTimer(activeTab); // Resume timing
+        const todayStats = dailyStats[date] ? Object.entries(dailyStats[date]) : [];
+        const timeSpent = todayStats.map(([hostname, entry]) => ({
+            ...entry,
+            icon: siteSettings[hostname]?.icon || "",
+            hostname
+        }));
+        sendResponse({ timeSpent });
+        startTimer(activeTab);
         return true;
     }
 });
